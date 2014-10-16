@@ -14,7 +14,10 @@ setup(
     description="Simple search form and handler you can use in all your views and templates.",
     long_description=read_file('README.md'),
     classifiers=[
-        "Programming Language :: Python :: 3.3",
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Security',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
