@@ -1,7 +1,7 @@
-django-search
+django-searchbar
 ============
 
-# django-search
+# django-searchbar
 
 WARNING: This is still in development, will commit it to pypi once it's ready
 
@@ -15,16 +15,16 @@ WARNING: This is still in development, will commit it to pypi once it's ready
 As simple as doing:
 
 <pre>
-pip install django-search
+pip install django-searchbar
 </pre>
 
 ### From source
 
-To install django-search from source:
+To install django-searchbar from source:
 
 <pre>
-git clone https://github.com/arsham/django-search/
-cd django-search
+git clone https://github.com/arsham/django-searchbar/
+cd django-searchbar
 python setup.py install
 </pre>
 

@@ -9,9 +9,9 @@ def read_file(filename):
 
 
 setup(
-    name='django-search',
-    version=__import__('django_search').__version__,
-    description="Simple search form and handler you can use in all your views and templates.",
+    name='django-searchbar',
+    version=__import__('django_searchbar').__version__,
+    description="Simple searchbar and handler you can use in all your views and templates.",
     long_description=read_file('README.md'),
     classifiers=[
         'Programming Language :: Python :: 3',
@@ -25,10 +25,10 @@ setup(
         'Framework :: Django',
         'Environment :: Web Environment',
     ],
-    keywords=['search', 'django', 'forms', 'template'],
+    keywords=['searchbar', 'django', 'forms', 'template'],
     author='Arsham Shirvani',
     author_email='arshamshirvani@gmail.com',
-    url='http://github.com/arsham/django-search',
+    url='http://github.com/arsham/django-searchbar',
     license='BSD',
     packages=find_packages(),
     zip_safe=False,
