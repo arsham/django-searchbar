@@ -9,7 +9,7 @@ A simple search bar and view handler to validate and get the results
 
 In your view:
 
-<pre>
+```python
 def my_view(request):
     search_bar = SearchBar(request, ['name', 'age'])
 
@@ -22,4 +22,4 @@ def my_view(request):
     if search_bar.is_valid('name'):
         my_name = search_bar['name']
     ....
-</pre>
+```
