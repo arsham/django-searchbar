@@ -11,7 +11,7 @@ def read_file(filename):
 setup(
     name='django-search',
     version=__import__('django_search').__version__,
-    description="Per-object judgment for Django, let them fight over permissions",
+    description="Simple search form and handler you can use in all your views and templates.",
     long_description=read_file('README.md'),
     classifiers=[
         'Programming Language :: Python :: 3',
