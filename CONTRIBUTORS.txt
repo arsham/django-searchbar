@@ -1,0 +1,11 @@
+============
+Contributors
+============
+
+django-judge Project Owner
+==========================
+
+* Arsham Shirvani <arshamshirvani@gmail.com>
+
+Contributors
+===========
