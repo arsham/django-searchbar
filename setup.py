@@ -26,6 +26,7 @@ setup(
         'Environment :: Web Environment',
     ],
     keywords=['searchbar', 'django', 'forms', 'template'],
+    platforms=['OS Independen'],
     author='Arsham Shirvani',
     author_email='arshamshirvani@gmail.com',
     url='http://github.com/arsham/django-searchbar',
