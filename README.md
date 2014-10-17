@@ -23,3 +23,41 @@ def my_view(request):
         my_name = search_bar['name']
     ....
 ```
+
+## Advanced Usage
+
+Notice: This is as far as it goes, if you need more advanced techniques you should use django's forms.
+
+If you need to show choices or set a field required:
+
+```python
+def my_view(request):
+    search_bar = SearchBar(request, [
+        'name',
+        {
+            'label': 'age',
+        },
+    ]) # this is the same as above, but....
+
+    search_bar = SearchBar(request, [
+        'name',
+        {
+            'label': 'age',
+            'required': True,
+        },
+    ])# Will fail the validation if user don't provide a value for age
+
+    #If you need choices, do:
+    search_bar = SearchBar(request, [
+        'name',
+        {
+            'label': 'gender',
+            'choices': (
+                ('m', 'Male'),
+                ('f', 'Female'),
+            ), #Same format as django's forms
+            'required': True, #Optional, default is false
+        },
+    ])
+
+```
