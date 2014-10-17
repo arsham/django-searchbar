@@ -2,8 +2,11 @@ if __debug__:
     from django.http import HttpRequest
 
 from django_searchbar.forms import SearchBarForm
+from django import forms
 from django.middleware import csrf
 from django.utils.safestring import mark_safe
+
+import collections
 
 
 def listify(item):
@@ -18,7 +21,7 @@ def listify(item):
     return item
 
 
-class SearchBar:
+class SearchBar(collections.MutableMapping):
 
     """
     Usage:
@@ -96,5 +99,43 @@ class SearchBar:
 
         return self.form.cleaned_data.get(index, '')
 
+
+    def __setitem__(self, field):
+
+        # self.form.fields.app
+        if isinstance(field, str):
+
+            label = field.replace('-', ' ').replace('_', ' ').title()
+            self.form.fields[field] = forms.CharField(label=label, required=False)
+
+        elif isinstance(field, dict):
+
+            label = field['label'].replace('-', ' ').replace('_', ' ').title()
+            required = field.get('required', False)
+
+            if 'choices' in field:
+                self.form.fields[field['label']] = forms.ChoiceField(label=label, choices=field['choices'], required=required)
+            else:
+                self.form.fields[field['label']] = forms.CharField(label=label, required=required)
+
+        pass
+
+
+    def __delitem__(self, item):
+
+        self.form.fields.pop()
+
+
+    def __iter__(self):
+
+        return iter(self.form.fields)
+
+
+    def __len__(self):
+
+        return len(self.form.fields)
+
+
     def __str__(self):
+
         return str(self.form)
