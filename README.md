@@ -24,6 +24,12 @@ def my_view(request):
     ....
 ```
 
+You can also change the form method:
+
+```python
+    search_bar = SearchBar(request, ['name', 'age'], method='get')
+```
+
 ## Advanced Usage
 
 Notice: This is as far as it goes, if you need more advanced techniques you should use django's forms.

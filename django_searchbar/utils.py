@@ -29,7 +29,7 @@ class SearchBar:
                 name_value = search_bar['name']
     """
 
-    def __init__(self, request, fields=None):
+    def __init__(self, request, fields=None, method='post'):
 
         assert isinstance(request, HttpRequest), 'request should be an instance of the HttpRequest object'
         assert isinstance(fields, (type(None), list, tuple, str, dict)), 'fields should be None, list or a tuple containing strings'
@@ -46,7 +46,7 @@ class SearchBar:
         self.request = request
         self.__fields = fields
         self.action = ''
-        self.method = 'post'
+        self.method = method.lower().strip()
 
     def is_valid(self, *args, **kwargs):
         """
@@ -83,7 +83,9 @@ class SearchBar:
         return form_validation
 
     def as_form(self):
-        csrf_ = "<input type='hidden' name='csrfmiddlewaretoken' value='{0}' />".format(csrf.get_token(self.request))
+        csrf_ = ''
+        if self.method == 'post':
+            csrf_ = "<input type='hidden' name='csrfmiddlewaretoken' value='{0}' />".format(csrf.get_token(self.request))
         submit_button = '<input type="submit" value="submit" />'
         return_string = "<form method='%s' action='%s'>%s %s %s</form>" % (self.method, self.action, csrf_, self, submit_button)
         return mark_safe(return_string)
