@@ -59,6 +59,7 @@ class UtilsTestCase(TestCase):
         })
         search_bar.is_valid()
         self.assertEqual(search_bar['name'], 'arsham')
+        self.assertEqual(search_bar.get('name'), 'arsham')
 
         request = RequestFactory().get('/?name2=arsham')
         search_bar = SearchBar(request, {
@@ -164,6 +165,42 @@ class UtilsTestCase(TestCase):
         self.assertIn('csrfmiddlewaretoken', str(search_bar.as_form()))
         self.assertIn('<form', str(search_bar.as_form()))
         self.assertIn('</form>', str(search_bar.as_form()))
+
+
+    def testAddFields(self):
+
+        request = RequestFactory().get('/?name=asdasd')
+        search_bar = SearchBar(request, ['name'])
+
+        search_bar.is_valid()
+
+        self.assertNotIn('asd1', search_bar)
+        search_bar['asd1'] = 'asd'
+        self.assertIn('asd1', search_bar)
+
+        search_bar['asd2'] = ({'aaa': 'bbb'},)
+        self.assertIn('asd2', search_bar)
+
+        search_bar['asd3'] = {'label': 'ASD', 'choices': ({'aaa': 'bbb'},)}
+        self.assertIn('asd3', search_bar)
+
+
+    def testPopFields(self):
+
+        request = RequestFactory().get('/?name=asdasd&age=10&other=asdasd')
+        search_bar = SearchBar(request, ['name', 'age', 'other'])
+
+        search_bar.is_valid()
+
+        self.assertNotIn('asd', search_bar)
+
+        search_bar.pop('age')
+        self.assertNotIn('age', search_bar)
+
+        search_bar.pop('other')
+        self.assertNotIn('other', search_bar)
+
+        self.assertNotIn('ggg', search_bar)
 
 
 class FormsTestCase(TestCase):

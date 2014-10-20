@@ -2,8 +2,11 @@ if __debug__:
     from django.http import HttpRequest
 
 from django_searchbar.forms import SearchBarForm
+from django import forms
 from django.middleware import csrf
 from django.utils.safestring import mark_safe
+
+import collections
 
 
 def listify(item):
@@ -18,7 +21,7 @@ def listify(item):
     return item
 
 
-class SearchBar:
+class SearchBar(collections.MutableMapping):
 
     """
     Usage:
@@ -90,11 +93,57 @@ class SearchBar:
         return_string = "<form method='%s' action='%s'>%s %s %s</form>" % (self.method, self.action, csrf_, self, submit_button)
         return mark_safe(return_string)
 
-    def __getitem__(self, index):
-        if index == 'as_form':
+    def __getitem__(self, key):
+
+        if key == 'as_form':
             return self.as_form()
 
-        return self.form.cleaned_data.get(index, '')
+        return self.form.cleaned_data.get(key, '')
+
+
+    def __contains__(self, key):
+
+        return key in self.form.fields
+
+
+    def __setitem__(self, key, value):
+
+        if isinstance(value, str):
+
+            self.form.fields[key] = forms.CharField(label=value, required=False)
+
+        elif isinstance(value, (list, tuple)):
+
+            label = key.replace('-', ' ').replace('_', ' ').title()
+            self.form.fields[key] = forms.ChoiceField(label=label, choices=value, required=False)
+
+        elif isinstance(value, dict):
+
+            required = value.get('required', False)
+
+            if 'label' in value:
+                label = value['label']
+            else:
+                label = key.replace('-', ' ').replace('_', ' ').title()
+
+            self.form.fields[key] = forms.ChoiceField(label=label, choices=value, required=required)
+
+
+    def __delitem__(self, key):
+
+        self.form.fields.pop(key)
+
+
+    def __iter__(self):
+
+        return iter(self.form.fields)
+
+
+    def __len__(self):
+
+        return len(self.form.fields)
+
 
     def __str__(self):
+
         return str(self.form)
