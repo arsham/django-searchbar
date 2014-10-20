@@ -67,3 +67,95 @@ def my_view(request):
     ])
 
 ```
+
+You can also define a replacement dictionary/callback, which transforms your input to something you can actually use in your db.model queries after getting filters (get_filters)
+
+```python
+    search_bar = SearchBar(request, ['username'], replacement={'username': 'user__username'})
+```
+
+or a bit smarter:
+
+```python
+    def replacement(item):
+        return {
+            'username': 'user__username',
+            'foo': 'bar',
+        }.get(item, 'user__username')
+
+    search_bar = SearchBar(request, ['username'], replacement=replacement)
+```
+
+## Recipes
+
+If you have a field you are using in various places, e.g. if you have ordering on some of your searchbars, do this:
+
+```python
+from django_searchbar.utils import SearchBar
+
+
+class OrderingSearchBar(SearchBar):
+
+    def __init__(self, request, choices, replacements={}, fields=None, method='post'):
+
+        ...do some checks here...
+
+        self.__choices = (('none', '----'),) + choices
+        self.__replacements = replacements
+        fields.extend([{
+            'label': 'order_by',
+            'choices': self.__choices,
+        }, {
+            'label': 'direction',
+            'choices': (
+                ('asc', 'ASC'),
+                ('desc', 'DESC'),
+            ),
+        },
+        ])
+
+        super().__init__(request=request, fields=fields, method=method)
+
+    def __getitem__(self, index):
+        if index == 'order_by':
+
+            exam_dict = {}
+            for choice in self.__choices:
+                if choice[0] is 'none':
+                    exam_dict[choice[0]] = False
+                else:
+                    exam_dict[choice[0]] = self.__replacements.get(choice[0], choice[0])
+
+            order_by = exam_dict.get(self.form.cleaned_data['order_by'])
+
+            if order_by and order_by != 'none':
+                direction = {
+                    'asc': '',
+                    'desc': '-',
+                }.get(self['direction'], '')
+
+                return "%s%s" % (direction, order_by)
+
+            return False
+
+        else:
+            return super().__getitem__(index)
+```
+
+Now in your view you can do this:
+
+```python
+    choices = (
+        ('username', 'Username'),
+    )
+    replacements = {
+        'username': 'user__username',
+    }
+
+    search_obj = OrderingSearchBar(request, fields=['username'], choices=choices, replacements=replacements)
+    people = Person.objects.all()
+
+    if search_obj.is_valid():
+        people = people.filter(user__username__icontains=search_obj['username'])
+
+```
