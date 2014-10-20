@@ -93,37 +93,45 @@ class SearchBar(collections.MutableMapping):
         return_string = "<form method='%s' action='%s'>%s %s %s</form>" % (self.method, self.action, csrf_, self, submit_button)
         return mark_safe(return_string)
 
-    def __getitem__(self, index):
-        if index == 'as_form':
+    def __getitem__(self, key):
+
+        if key == 'as_form':
             return self.as_form()
 
-        return self.form.cleaned_data.get(index, '')
+        return self.form.cleaned_data.get(key, '')
 
 
-    def __setitem__(self, field):
+    def __contains__(self, key):
 
-        # self.form.fields.app
-        if isinstance(field, str):
+        return key in self.form.fields
 
-            label = field.replace('-', ' ').replace('_', ' ').title()
-            self.form.fields[field] = forms.CharField(label=label, required=False)
 
-        elif isinstance(field, dict):
+    def __setitem__(self, key, value):
 
-            label = field['label'].replace('-', ' ').replace('_', ' ').title()
-            required = field.get('required', False)
+        if isinstance(value, str):
 
-            if 'choices' in field:
-                self.form.fields[field['label']] = forms.ChoiceField(label=label, choices=field['choices'], required=required)
+            self.form.fields[key] = forms.CharField(label=value, required=False)
+
+        elif isinstance(value, (list, tuple)):
+
+            label = key.replace('-', ' ').replace('_', ' ').title()
+            self.form.fields[key] = forms.ChoiceField(label=label, choices=value, required=False)
+
+        elif isinstance(value, dict):
+
+            required = value.get('required', False)
+
+            if 'label' in value:
+                label = value['label']
             else:
-                self.form.fields[field['label']] = forms.CharField(label=label, required=required)
+                label = key.replace('-', ' ').replace('_', ' ').title()
 
-        pass
+            self.form.fields[key] = forms.ChoiceField(label=label, choices=value, required=required)
 
 
-    def __delitem__(self, item):
+    def __delitem__(self, key):
 
-        self.form.fields.pop()
+        self.form.fields.pop(key)
 
 
     def __iter__(self):
