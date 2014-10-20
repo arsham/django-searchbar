@@ -1,7 +1,8 @@
-from unittest import TestCase
+from django.test import TestCase
 from django.test.client import Client
 from django.test.client import RequestFactory
 from django.forms import fields
+from django.db.models import Q
 from django_searchbar.utils import SearchBar, listify
 from django_searchbar.forms import SearchBarForm
 
@@ -165,6 +166,54 @@ class UtilsTestCase(TestCase):
         self.assertIn('csrfmiddlewaretoken', str(search_bar.as_form()))
         self.assertIn('<form', str(search_bar.as_form()))
         self.assertIn('</form>', str(search_bar.as_form()))
+
+    def testGetFilters(self):
+        request = RequestFactory().get('/?username=arsham&email=this_is_an_email')
+        search_bar = SearchBar(request, ['username', 'email'])
+        search_bar.is_valid()
+        self.assertIsInstance(search_bar.get_filters(), Q)
+        self.assertIn("'username'", str(search_bar.get_filters()))
+        self.assertNotIn("'username__iexact'", str(search_bar.get_filters()))
+        self.assertIn("'email'", str(search_bar.get_filters()))
+        self.assertIn("'username__icontains'", str(search_bar.get_filters(lookup_string='icontains')))
+        self.assertIn("'email__icontains'", str(search_bar.get_filters(lookup_string='icontains')))
+        self.assertIn("(AND: ", str(search_bar.get_filters()))
+        self.assertIn("arsham", str(search_bar.get_filters()))
+        self.assertIn("this_is_an_email", str(search_bar.get_filters()))
+        self.assertNotIn('(OR:', str(search_bar.get_filters()))
+
+        search_bar = SearchBar(request, ['username', 'email'])
+        search_bar.is_valid()
+        self.assertIn("'username'", str(search_bar.get_filters('username')))
+        self.assertNotIn("'email__exact'", str(search_bar.get_filters('username')))
+
+        search_bar = SearchBar(request, ['username', 'email', 'age'])
+        search_bar.is_valid()
+        self.assertIn("'username'", str(search_bar.get_filters('username', 'age')))
+        self.assertIn("'username__icontains'", str(search_bar.get_filters('username', 'age', lookup_string='icontains')))
+        self.assertIn("'email'", str(search_bar.get_filters('username', 'email')))
+        self.assertIn("'username'", str(search_bar.get_filters('username', 'email')))
+        self.assertNotIn("'age'", str(search_bar.get_filters('username', 'email')))
+
+    def testEmptyFilters(self):
+        request = RequestFactory().get('/')
+        search_bar = SearchBar(request, ['username', 'email'])
+        search_bar.is_valid()
+        self.assertEqual("(AND: )", str(search_bar.get_filters()))
+
+    def testReplacementsDictionary(self):
+        request = RequestFactory().get('/?name=arsham&age=6')
+        search_bar = SearchBar(request, ['name'], replacements={'name': 'username'})
+        search_bar.is_valid()
+        self.assertIn("'username'", str(search_bar.get_filters()))
+        self.assertNotIn("'user__'", str(search_bar.get_filters()))
+
+    def testReplacementsCallable(self):
+        request = RequestFactory().get('/?name=arsham&age=6')
+        search_bar = SearchBar(request, ['name'], replacements={'name': lambda x: 'username'})
+        search_bar.is_valid()
+        self.assertIn("'username'", str(search_bar.get_filters()))
+        self.assertNotIn("'user__'", str(search_bar.get_filters()))
 
 
     def testAddFields(self):

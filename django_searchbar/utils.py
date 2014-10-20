@@ -1,12 +1,12 @@
 if __debug__:
     from django.http import HttpRequest
 
+import collections
 from django_searchbar.forms import SearchBarForm
 from django import forms
 from django.middleware import csrf
 from django.utils.safestring import mark_safe
-
-import collections
+from django.db.models import Q
 
 
 def listify(item):
@@ -32,10 +32,11 @@ class SearchBar(collections.MutableMapping):
                 name_value = search_bar['name']
     """
 
-    def __init__(self, request, fields=None, method='post'):
+    def __init__(self, request, fields=None, replacements={}, method='post'):
 
         assert isinstance(request, HttpRequest), 'request should be an instance of the HttpRequest object'
         assert isinstance(fields, (type(None), list, tuple, str, dict)), 'fields should be None, list or a tuple containing strings'
+        assert isinstance(replacements, (dict, collections.Callable)), 'fields should be None, list or a tuple containing strings'
 
         if __debug__ and isinstance(fields, (list, tuple)):
             for item in fields:
@@ -47,7 +48,8 @@ class SearchBar(collections.MutableMapping):
             self.form = SearchBarForm(request.GET or request.POST, fields=fields)
 
         self.request = request
-        self.__fields = fields
+        self.replacements = replacements
+        self.fields = fields
         self.action = ''
         self.method = method.lower().strip()
 
@@ -68,7 +70,7 @@ class SearchBar(collections.MutableMapping):
 
             return True
 
-        if not self.__fields:
+        if not self.fields:
             return False
 
         form_validation = self.form.is_valid()
@@ -77,8 +79,8 @@ class SearchBar(collections.MutableMapping):
             args = listify(args)
             form_validation = all(self.form.cleaned_data.get(item, '') != '' for item in args)
 
-        elif form_validation and self.__fields:
-            for item in self.__fields:
+        elif form_validation and self.fields:
+            for item in self.fields:
                 if not check_validation(self, item):
                     form_validation = False
                     break
@@ -100,11 +102,39 @@ class SearchBar(collections.MutableMapping):
 
         return self.form.cleaned_data.get(key, '')
 
+    def get_filters(self, *args, lookup_string=''):
+        """
+        Returns a Q object based on all the input from query term
+        @param lookup_string: adds this ``lookup_string`` to query lookup of all fields
+        @param args: if provided, items you need to be in queryset. otherwise it's everything
+        """
+        filters = Q()
+        lookup_string = lookup_string.lower().strip()
+
+        if args:
+            __fields = [k for k in self.fields if k in args]
+        else:
+            __fields = self.fields
+
+        for field in __fields:
+            if isinstance(field, dict):
+                field = field['label']
+            if self[field]:
+                replacement = self.replacements.get(field, field)
+                if isinstance(replacement, collections.Callable):
+                    replacement = replacement(field)
+
+                if lookup_string:
+                    field_name = "{field}__{method}".format(field=replacement, method=lookup_string)
+                else:
+                    field_name = replacement
+
+                filters &= Q(**{field_name: self[field]})
+        return filters
 
     def __contains__(self, key):
 
         return key in self.form.fields
-
 
     def __setitem__(self, key, value):
 
@@ -128,21 +158,17 @@ class SearchBar(collections.MutableMapping):
 
             self.form.fields[key] = forms.ChoiceField(label=label, choices=value, required=required)
 
-
     def __delitem__(self, key):
 
         self.form.fields.pop(key)
-
 
     def __iter__(self):
 
         return iter(self.form.fields)
 
-
     def __len__(self):
 
         return len(self.form.fields)
-
 
     def __str__(self):
 
