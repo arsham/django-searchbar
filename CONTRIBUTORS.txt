@@ -9,3 +9,5 @@ django-searchbar Project Owner
 
 Contributors
 ===========
+
+* Ivan Genchev <ivan@scooploop.com>
