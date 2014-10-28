@@ -135,12 +135,12 @@ class UtilsTestCase(TestCase):
     def testIsValidMethodFails(self):
         request = RequestFactory().get('/')
         search_bar = SearchBar(request, 'name')
-        self.assertFalse(search_bar.is_valid())
+        self.assertTrue(search_bar.is_valid())
         self.assertFalse(search_bar.is_valid('name'))
 
         request = RequestFactory().get('/?name=123')
         search_bar = SearchBar(request, ['name', 'age'])
-        self.assertFalse(search_bar.is_valid())
+        self.assertTrue(search_bar.is_valid())
         self.assertFalse(search_bar.is_valid('age'))
         self.assertFalse(search_bar.is_valid('age', 'name'))
 
@@ -215,6 +215,32 @@ class UtilsTestCase(TestCase):
         self.assertIn("'username'", str(search_bar.get_filters()))
         self.assertNotIn("'user__'", str(search_bar.get_filters()))
 
+    def testIgnoreList(self):
+        request = RequestFactory().get('/?gender=m')
+        search_bar = SearchBar(request, [{
+            'label': 'gender',
+            'choices': (
+                ('none', '---'),
+                ('m', 'Male'),
+                ('f', 'Female'),
+            ),
+            'ignore_list': ['none']
+        }])
+        search_bar.is_valid()
+        self.assertIn("'gender'", str(search_bar.get_filters()))
+
+        request = RequestFactory().get('/?gender=none')
+        search_bar = SearchBar(request, [{
+            'label': 'gender',
+            'choices': (
+                ('none', '---'),
+                ('m', 'Male'),
+                ('f', 'Female'),
+            ),
+            'ignore_list': ['none']
+        }])
+        search_bar.is_valid()
+        self.assertNotIn("'gender'", str(search_bar.get_filters()))
 
     def testAddFields(self):
 

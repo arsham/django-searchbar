@@ -62,6 +62,7 @@ class SearchBar(collections.MutableMapping):
         self.action = ''
         self.method = method.lower().strip()
         self.__form = None
+        self.errors = []
 
     @property
     def form(self):
@@ -82,29 +83,29 @@ class SearchBar(collections.MutableMapping):
         def check_validation(self, item):
             if isinstance(item, dict):
                 if item.get('required', False) and self.form.cleaned_data.get(item['label'], '') == '':
-                    return False
+                    self.errors.append('%s is empty' % item['label'])
             elif isinstance(item, str):
-                if self.form.cleaned_data.get(item, '') == '':
-                    return False
-
-            return True
+                if item not in self.form.cleaned_data:
+                    self.errors.append('Our form didn\'t validate %s' % item)
 
         if not self.fields:
+            self.errors.append('There is no field set')
             return False
 
         form_validation = self.form.is_valid()
 
         if form_validation and args:
             args = listify(args)
-            form_validation = all(self.form.cleaned_data.get(item, '') != '' for item in args)
+            if not all(self.form.cleaned_data.get(item, '') != '' for item in args):
+                self.errors.append('Values in form was failed by form itself')
 
         elif form_validation and self.fields:
             for item in self.fields:
-                if not check_validation(self, item):
-                    form_validation = False
-                    break
+                check_validation(self, item)
+        else:
+            self.errors.append('Values in form was failed by form itself')
 
-        return form_validation
+        return not self.errors
 
     def as_form(self):
         csrf_ = ''
@@ -113,13 +114,6 @@ class SearchBar(collections.MutableMapping):
         submit_button = '<input type="submit" value="submit" />'
         return_string = "<form method='%s' action='%s'>%s %s %s</form>" % (self.method, self.action, csrf_, self, submit_button)
         return mark_safe(return_string)
-
-    def __getitem__(self, key):
-
-        if key == 'as_form':
-            return self.as_form()
-
-        return self.form.cleaned_data.get(key, '')
 
     def get_filters(self, *args, lookup_string=''):
         """
@@ -136,9 +130,13 @@ class SearchBar(collections.MutableMapping):
             __fields = self.fields
 
         for field in __fields:
+
+            ignore_list = []
             if isinstance(field, dict):
+                ignore_list = field.get('ignore_list', [])
                 field = field['label']
-            if self[field]:
+
+            if self[field] and not self[field] in ignore_list:
                 replacement = self.replacements.get(field, field)
                 if isinstance(replacement, collections.Callable):
                     replacement = replacement(field)
@@ -154,6 +152,13 @@ class SearchBar(collections.MutableMapping):
     def __contains__(self, key):
 
         return key in self.form.fields
+
+    def __getitem__(self, key):
+
+        if key == 'as_form':
+            return self.as_form()
+
+        return self.form.cleaned_data.get(key, '')
 
     def __setitem__(self, key, value):
 

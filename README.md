@@ -21,13 +21,41 @@ def my_view(request):
     #If your url comes as: "?name=my_name" and you don't care about the age, do this instead:
     if search_bar.is_valid('name'):
         my_name = search_bar['name']
+        #If you need to apply name to your queryset:
+        Model.objects.filter(name__contains=my_name)
     ....
 ```
 
-You can also change the form method:
+Or if you prefer Class Based Views:
+
+```python
+from django.views.generic import ListView
+from django_searchbar.mixins import SearchBarViewMixin
+
+class MyView(SearchBarViewMixin, ListView):
+    searchbar_fields = ['name']
+    ....
+```
+
+and that's about it! The search bar get's validated on it's own, and it will use the value of 'name' in your queryset automatically.
+You can access the search bar in your template by (It's automatically is injected into your context):
+
+```python
+{{ search_bar }}
+```
+
+You can also change the form method, choices are 'get' and 'post':
 
 ```python
     search_bar = SearchBar(request, ['name', 'age'], method='get')
+```
+
+In CBV:
+
+```python
+class MyView(SearchBarViewMixin, ListView):
+    searchbar_fields = ['name']
+    searchbar_method = 'get'
 ```
 
 ## Advanced Usage
@@ -59,13 +87,35 @@ def my_view(request):
         {
             'label': 'gender',
             'choices': (
+                ('none', 'N/A')
                 ('m', 'Male'),
                 ('f', 'Female'),
             ), #Same format as django's forms
+            'ignore_list': ['none'] #Ignores in query filters if the value is 'none' (as above)
             'required': True, #Optional, default is false
         },
     ])
 
+```
+
+Or in CBV:
+
+```python
+class MyView(SearchBarViewMixin, ListView):
+    searchbar_fields = [
+        'name',
+        {'label': 'age', 'required': True},
+        {
+            'label': 'gender',
+            'choices': (
+                ('none', 'N/A')
+                ('m', 'Male'),
+                ('f', 'Female'),
+            ), #Same format as django's forms
+            'ignore_list': ['none'] #Ignores in query filters if the value is 'none' (as above)
+            'required': True, #Optional, default is false
+        },
+    ]
 ```
 
 You can also define a replacement dictionary/callback, which transforms your input to something you can actually use in your db.model queries after getting filters (get_filters)
@@ -84,6 +134,18 @@ or a bit smarter:
         }.get(item, 'user__username')
 
     search_bar = SearchBar(request, ['username'], replacement=replacement)
+```
+
+In CBV:
+
+```python
+class MyView(SearchBarViewMixin, ListView):
+    searchbar_replacements = {
+        'username': 'user__username',
+    }
+    #or using above function:
+    searchbar_replacements = replacement
+
 ```
 
 ## Recipes
@@ -140,6 +202,28 @@ class OrderingSearchBar(SearchBar):
 
         else:
             return super().__getitem__(index)
+
+
+#Now the mixin
+class OrderingSearchBarViewMixin(SearchBarViewMixin):
+
+    def get_searchbar(self, request):
+         ...do some checks here...
+        return OrderingSearchBar(
+            request=request,
+            choices=self.searchbar_choices,
+            fields=self.searchbar_fields,
+            replacements=self.searchbar_replacements,
+            method=self.searchbar_method)
+
+    def get(self, request, *args, **kwargs):
+
+        search_obj = self.get_searchbar(request)
+        if search_obj.is_valid() and search_obj.get_ordering():
+                self.queryset = self.queryset.order_by(search_obj.get_ordering())
+
+        return super().get(request, *args, **kwargs)
+
 ```
 
 Now in your view you can do this:
@@ -149,7 +233,7 @@ Now in your view you can do this:
         ('username', 'Username'),
     )
     replacements = {
-        'username': 'user__username',
+        'username': 'user__username__icontains',
     }
 
     search_obj = OrderingSearchBar(request, fields=['username'], choices=choices, replacements=replacements)
@@ -157,5 +241,20 @@ Now in your view you can do this:
 
     if search_obj.is_valid():
         people = people.filter(user__username__icontains=search_obj['username'])
+        #Or
+        people = people.filter(search_obj.get_filters())
+
+```
+
+In CBV:
+
+```python
+class MyView(SearchBarViewMixin, ListView):
+    searchbar_choices = (
+        ('username', 'Username'),
+    )
+    searchbar_replacements = {
+        'username': 'user__username__icontains',
+    }
 
 ```
