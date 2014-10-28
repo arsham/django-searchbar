@@ -32,7 +32,6 @@ class SearchBarViewMixin:
     def get(self, request, *args, **kwargs):
 
         search_obj = self.get_searchbar(request)
-        print(search_obj.is_valid())
         if search_obj.is_valid():
             self.queryset = self.get_queryset().filter(search_obj.get_filters())
 
