@@ -36,22 +36,36 @@ class SearchBar(collections.MutableMapping):
 
         assert isinstance(request, HttpRequest), 'request should be an instance of the HttpRequest object'
         assert isinstance(fields, (type(None), list, tuple, str, dict)), 'fields should be None, list or a tuple containing strings'
-        assert isinstance(replacements, (dict, collections.Callable)), 'fields should be None, list or a tuple containing strings'
+        assert isinstance(replacements, (dict, collections.Callable)), 'fields should be dictionary or a callable'
 
-        if __debug__ and isinstance(fields, (list, tuple)):
-            for item in fields:
-                assert isinstance(item, (str, dict)), '%s should be a string or a dictionary containing label' % item
+        if __debug__:
+            def check_dict(item):
+                assert 'label' in item, 'Your fields should have a label'
+                if 'choices' in item:
+                    assert isinstance(item['choices'], collections.Iterable), 'Your choices should be a dict'
+
+            if isinstance(fields, (list, tuple)):
+                for item in fields:
+                    assert isinstance(item, (str, dict)), '%s should be a string or a dictionary containing label' % item
+                    if isinstance(item, dict):
+                        check_dict(item)
+            elif isinstance(fields, dict):
+                check_dict(fields)
 
         if fields:
             fields = listify(fields)
-
-            self.form = SearchBarForm(request.GET or request.POST, fields=fields)
 
         self.request = request
         self.replacements = replacements
         self.fields = fields
         self.action = ''
         self.method = method.lower().strip()
+
+    @property
+    def form(self):
+        form = SearchBarForm(self.request.GET or self.request.POST, fields=self.fields)
+        form.is_valid()
+        return form
 
     def is_valid(self, *args, **kwargs):
         """
