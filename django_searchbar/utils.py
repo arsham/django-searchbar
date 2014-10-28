@@ -58,14 +58,19 @@ class SearchBar(collections.MutableMapping):
         self.request = request
         self.replacements = replacements
         self.fields = fields
+        self.old_fields = None
         self.action = ''
         self.method = method.lower().strip()
+        self.__form = None
 
     @property
     def form(self):
-        form = SearchBarForm(self.request.GET or self.request.POST, fields=self.fields)
-        form.is_valid()
-        return form
+        if not self.__form and self.old_fields != self.fields:
+            self.__form = SearchBarForm(self.request.GET or self.request.POST, fields=self.fields)
+            self.__form.is_valid()
+            self.old_fields = self.fields
+
+        return self.__form
 
     def is_valid(self, *args, **kwargs):
         """
