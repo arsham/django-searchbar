@@ -96,6 +96,15 @@ def my_view(request):
         },
     ])
 
+    #If you need custom widget:
+    search_bar = SearchBar(request, [
+        'name',
+        {
+            'label': 'age',
+            'required': True,
+            'widget': forms.Textarea(attrs={'placeholder': 'Enter your name here..'})
+        },
+    ])
 ```
 
 Or in CBV:

@@ -35,5 +35,7 @@ class SearchBarForm(forms.Form):
 
                 if 'choices' in field:
                     self.fields[field['label']] = forms.ChoiceField(label=label, choices=field['choices'], required=required)
+                elif 'widget' in field:
+                    self.fields[field['label']] = forms.CharField(label=label, required=required, widget=field['widget'])
                 else:
                     self.fields[field['label']] = forms.CharField(label=label, required=required)
