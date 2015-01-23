@@ -188,7 +188,8 @@ class SearchBar(collections.MutableMapping):
 
     def __iter__(self):
 
-        return iter(self.form.fields)
+        for name in self.form.fields:
+            yield self.form[name]
 
     def __len__(self):
 
